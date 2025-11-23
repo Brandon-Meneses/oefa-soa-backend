@@ -10,7 +10,7 @@ class EsbOrchestrator(private val service: OefaService) {
      * Orquesta datos de Fiscalización, Supervisión y Evaluación Ambiental
      * para generar un resumen integral del estado ambiental nacional.
      */
-    fun obtenerResumenAmbiental(limit: Int = 10): Map<String, Any?> {
+    fun obtenerResumenAmbiental(limit: Int = 20): Map<String, Any?> {
         val fiscalizacion = mapOf(
             "denuncias" to service.safeFetch("DENUN-SINAD-61293", limit),
             "pedidosFiscalia" to service.safeFetch("PEDID-FISCA-2019-61940", limit),
@@ -52,7 +52,7 @@ class EsbOrchestrator(private val service: OefaService) {
     /**
      * Ejemplo de orquestación temática: agua
      */
-    fun obtenerResumenAgua(limit: Int = 10): Map<String, Any?> {
+    fun obtenerResumenAgua(limit: Int = 20): Map<String, Any?> {
         val denuncias = service.safeFetch("DENUN-SINAD-61293", limit)
         val calidad = service.indicadoresAgua(limit)
         val politicas = service.safeFetch("PROYE-NORMA-OEFA", limit)
@@ -69,7 +69,7 @@ class EsbOrchestrator(private val service: OefaService) {
     // ===========================================================
     // 🌱 SUELO
     // ===========================================================
-    fun obtenerResumenSuelo(limit: Int = 10): Map<String, Any?> {
+    fun obtenerResumenSuelo(limit: Int = 20): Map<String, Any?> {
         val supervision = service.safeFetch("INFOR-DE-LA-COORD-AGRIC", limit)
         val calidad = service.indicadoresSuelo(limit)
         val politicas = service.safeFetch("PROYE-NORMA-EXTER", limit)
@@ -86,7 +86,7 @@ class EsbOrchestrator(private val service: OefaService) {
     // ===========================================================
     // 🌫️ AIRE
     // ===========================================================
-    fun obtenerResumenAire(limit: Int = 10): Map<String, Any?> {
+    fun obtenerResumenAire(limit: Int = 20): Map<String, Any?> {
         val calidad = service.indicadoresAire(limit)
         val supervision = service.safeFetch("INFOR-DE-LA-DIREC-28304", limit)
         val politicas = service.safeFetch("PROYE-NORMA-OEFA", limit)
@@ -103,7 +103,7 @@ class EsbOrchestrator(private val service: OefaService) {
     // ===========================================================
     // 🐠 BIOTA
     // ===========================================================
-    fun obtenerResumenBiota(limit: Int = 10): Map<String, Any?> {
+    fun obtenerResumenBiota(limit: Int = 20): Map<String, Any?> {
         val indicadores = service.indicadoresBiota(limit)
         val fiscalizacion = service.safeFetch("DENUN-SINAD-61293", limit)
         val politicas = service.safeFetch("PROYE-NORMA-OEFA", limit)
@@ -117,7 +117,7 @@ class EsbOrchestrator(private val service: OefaService) {
         )
     }
     //ruido
-    fun obtenerResumenRuido(limit: Int = 10): Map<String, Any?> {
+    fun obtenerResumenRuido(limit: Int = 20): Map<String, Any?> {
         val indicadores = service.indicadoresRuido(limit)
         val supervision = service.safeFetch("INFOR-DE-LA-COORD-AGRIC", limit)
         val politicas = service.safeFetch("PROYE-NORMA-OEFA", limit)
@@ -134,7 +134,7 @@ class EsbOrchestrator(private val service: OefaService) {
     // ===========================================================
     // 🧬 HIDROBIOLOGÍA
     // ===========================================================
-    fun obtenerResumenHidrobiologia(limit: Int = 10): Map<String, Any?> {
+    fun obtenerResumenHidrobiologia(limit: Int = 20): Map<String, Any?> {
         val indicadores = service.indicadoresHidrobiologia(limit)
         val denuncias = service.safeFetch("DENUN-SINAD-61293", limit)
         val politicas = service.safeFetch("PROYE-NORMA-EXTER", limit)
@@ -151,7 +151,7 @@ class EsbOrchestrator(private val service: OefaService) {
     // ===========================================================
     // 🪨 SEDIMENTOS
     // ===========================================================
-    fun obtenerResumenSedimentos(limit: Int = 10): Map<String, Any?> {
+    fun obtenerResumenSedimentos(limit: Int = 20): Map<String, Any?> {
         val indicadores = service.indicadoresSedimento(limit)
         val supervision = service.safeFetch("INFOR-DE-LA-DIREC-28304", limit)
         val politicas = service.safeFetch("PROYE-NORMA-OEFA", limit)
@@ -168,7 +168,7 @@ class EsbOrchestrator(private val service: OefaService) {
     // ===========================================================
     // Flora y Fauna
     // ===========================================================
-    fun obtenerResumenFloraFauna(limit: Int = 10): Map<String, Any?> {
+    fun obtenerResumenFloraFauna(limit: Int = 20): Map<String, Any?> {
         val indicadores = service.indicadoresFloraFauna(limit)
         val fiscalizacion = service.safeFetch("DENUN-SINAD-61293", limit)
         val politicas = service.safeFetch("PROYE-NORMA-EXTER", limit)

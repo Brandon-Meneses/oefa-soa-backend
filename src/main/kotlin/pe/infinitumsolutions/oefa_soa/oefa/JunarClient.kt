@@ -24,7 +24,7 @@ class JunarClient(
         backoff = Backoff(delayExpression = "\${retry.oefa.backoff-ms}")
     )
     @Cacheable(cacheNames = ["oefa"], key = "#guid + ':' + #limit + ':' + #offset")
-    fun fetchDataStream(guid: String, limit: Int = 50, offset: Int = 0): DataTable {
+    fun fetchDataStream(guid: String, limit: Int = 200, offset: Int = 0): DataTable {
         require(authKey.isNotBlank()) { "OEFA auth-key no configurado" }
 
         val uri = "/datastreams/$guid/data.json?auth_key=$authKey&limit=$limit&offset=$offset"
@@ -41,29 +41,33 @@ class JunarClient(
 
     private fun parseToTable(r: JunarResponse): DataTable {
         val res = r.result ?: return DataTable(r.title, r.description, emptyList(), emptyList())
+
         val cols = res.fCols
-        if (cols <= 0) return DataTable(r.title, r.description, emptyList(), emptyList())
+        val rowsCount = res.fRows
+        val array = res.fArray
 
-        val headers = res.fArray
-            .filter { it.fHeader == true }
-            .map { it.fStr?.trim().orEmpty() }
-
-        // Resto de celdas: filas en orden row-major
-        val dataCells = res.fArray.filter { it.fHeader != true }.map { it.fStr ?: "" }
-        val rows = mutableListOf<Map<String, String>>()
-
-        if (headers.isEmpty() || dataCells.isEmpty()) {
-            return DataTable(r.title, r.description, headers, emptyList())
+        if (cols <= 0 || rowsCount <= 0 || array.isEmpty()) {
+            return DataTable(r.title, r.description, emptyList(), emptyList())
         }
 
-        dataCells.chunked(cols).forEach { chunk ->
-            val row = headers.indices.associate { i ->
-                val key = headers.getOrElse(i) { "COL_$i" }
-                val value = chunk.getOrElse(i) { "" }.trim()
-                key to value
+        // ✔ CORRECCIÓN: Los headers son siempre los primeros `cols` elementos
+        val headers = array.take(cols).map { it.fStr?.trim().orEmpty() }
+
+        // ✔ El resto de celdas son los registros
+        val rawCells = array.drop(cols).map { it.fStr?.trim().orEmpty() }
+
+        // ✔ Reconstrucción real de filas
+        val rows = rawCells.chunked(cols).take(rowsCount).map { chunk ->
+            headers.indices.associate { i ->
+                headers[i] to chunk.getOrElse(i) { "" }
             }
-            rows += row
         }
-        return DataTable(r.title, r.description, headers, rows)
+
+        return DataTable(
+            title = r.title,
+            description = r.description,
+            headers = headers,
+            rows = rows
+        )
     }
 }

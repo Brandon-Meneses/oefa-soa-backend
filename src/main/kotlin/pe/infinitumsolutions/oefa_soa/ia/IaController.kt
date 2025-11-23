@@ -1,6 +1,8 @@
 package pe.infinitumsolutions.oefa_soa.ia
 
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
@@ -8,6 +10,8 @@ import org.springframework.web.bind.annotation.*
 import pe.infinitumsolutions.oefa_soa.esb.EsbOrchestrator
 import reactor.core.publisher.Mono
 import java.time.Instant
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @Tag(
     name = "Módulo de IA Ambiental",
@@ -21,253 +25,172 @@ class IaController(
 ) {
 
     // ===========================================================
-    // 🧩 Análisis general del estado ambiental
+    // 🔧 Utilidades internas
     // ===========================================================
-    @Operation(
-        summary = "Analiza el estado ambiental integral",
-        description = "Usa el modelo de IA para generar un resumen analítico de los datos orquestados del ESB."
-    )
-    @GetMapping("/resumen")
-    fun analizarResumen(@RequestParam(defaultValue = "10") limit: Int): ResponseEntity<Map<String, Any>> {
-        val data = orchestrator.obtenerResumenAmbiental(limit)
-        val prompt = """
-            Eres un analista ambiental especializado en datos del OEFA.
-            A partir del siguiente resumen de fiscalización, supervisión, evaluación ambiental y políticas, 
-            genera un informe con:
-            
-            1. Principales hallazgos.
-            2. Patrones ambientales observados.
-            3. Riesgos emergentes.
-            4. Recomendaciones de gestión ambiental.
 
-            Datos:
-            ${data.toString().take(4000)}
-        """.trimIndent()
+    /** Normaliza valores numéricos */
+    private fun parseValor(raw: String?): Double? {
+        if (raw == null) return null
 
-        val analisis = groqClient.analyze(prompt).block()
+        val clean = raw
+            .replace("<", "")           // "<0.005" → "0.005"
+            .replace(",", ".")          // "7,36"   → "7.36"
+            .trim()
 
-        return ResponseEntity.ok(
+        return clean.toDoubleOrNull()
+    }
+
+    /** Normaliza fechas */
+    private fun parseFecha(raw: String?): String? {
+        if (raw == null) return null
+
+        return try {
+            LocalDate.parse(raw, DateTimeFormatter.ofPattern("M/d/yy"))
+                .format(DateTimeFormatter.ISO_LOCAL_DATE)
+        } catch (ex: Exception) {
+            null
+        }
+    }
+
+    /** Extrae solo lo necesario para la IA */
+    private fun compactarDataset(rows: List<Map<String, String>>): List<Map<String, Any?>> {
+        return rows.map { r ->
             mapOf(
-                "tipo" to "Análisis Ambiental Integral",
-                "modelo" to "Groq Llama3-70B",
-                "timestamp" to Instant.now().toString(),
-                "analisis" to analisis
+                "parametro" to r["Parámetro"],
+                "valor" to parseValor(r["Valor"]),
+                "unidad" to r["Unidad de medida"],
+                "fecha" to parseFecha(r["Fecha"])
             )
-        ) as ResponseEntity<Map<String, Any>>
+        }.filter { it["parametro"] != null }
+    }
+
+    /** Limpieza de respuesta Groq */
+    fun extraerJsonSeguro(raw: String): String {
+        val clean = raw
+            .replace("```json", "")
+            .replace("```", "")
+            .replace("“", "\"")
+            .replace("”", "\"")
+
+        val start = clean.indexOf("<JSON>")
+        val end = clean.indexOf("</JSON>")
+
+        if (start == -1 || end == -1) {
+            throw RuntimeException("La IA no devolvió JSON válido.\nRAW:\n$raw")
+        }
+
+        return clean.substring(start + 6, end).trim()
     }
 
     // ===========================================================
-    // 💧 Análisis temático: Agua
+    // 🔍 ANÁLISIS TEMÁTICO UNIFICADO
     // ===========================================================
     @Operation(
-        summary = "Genera un análisis de IA sobre el tema Agua",
-        description = "Integra datos orquestados del ESB y produce un resumen técnico del estado ambiental del agua."
-    )
-    @GetMapping("/agua")
-    fun analizarAgua(@RequestParam(defaultValue = "10") limit: Int): ResponseEntity<Map<String, Any>> {
-        val data = orchestrator.obtenerResumenAgua(limit)
-        val prompt = """
-            Analiza los siguientes datos ambientales relacionados con el AGUA:
-            Incluyen calidad del agua, denuncias, políticas y supervisión ambiental.
-            
-            Genera un informe con:
-            - Estado general del agua.
-            - Posibles causas de contaminación.
-            - Áreas críticas o en riesgo.
-            - Recomendaciones técnicas basadas en las políticas actuales.
-            
-            Datos:
-            ${data.toString().take(4000)}
-        """.trimIndent()
-
-        val analisis = groqClient.analyze(prompt).block()
-
-        return ResponseEntity.ok(
-            mapOf(
-                "tema" to "Agua",
-                "modelo" to "Groq Llama3-70B",
-                "analisis" to analisis
-            )
-        ) as ResponseEntity<Map<String, Any>>
-    }
-
-    // ===========================================================
-    // 🌱 Análisis temático: Suelo
-    // ===========================================================
-    @Operation(
-        summary = "Genera un análisis de IA sobre el tema Suelo",
-        description = "Orquesta información del ESB para producir un análisis de IA enfocado en el suelo."
-    )
-    @GetMapping("/suelo")
-    fun analizarSuelo(@RequestParam(defaultValue = "10") limit: Int): ResponseEntity<Map<String, Any>> {
-        val data = orchestrator.obtenerResumenSuelo(limit)
-        val prompt = """
-            A continuación tienes datos ambientales del SUELO del Perú, incluyendo calidad, supervisión y políticas.
-            Genera un resumen técnico con:
-            - Principales hallazgos en calidad del suelo.
-            - Riesgos y patrones de degradación.
-            - Políticas o medidas preventivas aplicables.
-            - Recomendaciones de mitigación ambiental.
-            
-            Datos:
-            ${data.toString().take(4000)}
-        """.trimIndent()
-
-        val analisis = groqClient.analyze(prompt).block()
-
-        return ResponseEntity.ok(
-            mapOf(
-                "tema" to "Suelo",
-                "modelo" to "Groq Llama3-70B",
-                "analisis" to analisis
-            )
-        ) as ResponseEntity<Map<String, Any>>
-    }
-
-
-    @GetMapping("/test")
-    fun testGroq(): ResponseEntity<String> {
-        val result = groqClient.analyze("Hello from OEFA test").block()
-        return ResponseEntity.ok(result ?: "No response.")
-    }
-
-    // ===========================================================
-// 🤖 Análisis automático temático (unificado)
-// ===========================================================
-    @Operation(
-        summary = "Genera un análisis de IA para un tema ambiental específico",
-        description = """
-        Analiza automáticamente los datos orquestados por el ESB según el tema indicado.
-        Temas disponibles: agua, suelo, aire, biota, ruido, hidrobiologia, sedimentos, resumen.
-    """
+        summary = "Genera un análisis IA según el tema ambiental",
+        description = "El ESB compila la data del OEFA y la IA genera un dashboard analítico estructurado."
     )
     @GetMapping("/analizar/{tema}")
     fun analizarPorTema(
         @PathVariable tema: String,
         @RequestParam(defaultValue = "10") limit: Int
     ): ResponseEntity<Map<String, Any>> {
-        val data = when (tema.lowercase()) {
+
+        // ------- Obtener data del ESB -------
+        val dataset = when (tema.lowercase()) {
             "agua" -> orchestrator.obtenerResumenAgua(limit)
             "suelo" -> orchestrator.obtenerResumenSuelo(limit)
             "aire" -> orchestrator.obtenerResumenAire(limit)
             "biota" -> orchestrator.obtenerResumenBiota(limit)
-            "ruido"-> orchestrator.obtenerResumenRuido(limit)
-            "hidrobiologia"-> orchestrator.obtenerResumenHidrobiologia(limit)
-            "sedimentos"-> orchestrator.obtenerResumenSedimentos(limit)
+            "ruido" -> orchestrator.obtenerResumenRuido(limit)
+            "hidrobiologia" -> orchestrator.obtenerResumenHidrobiologia(limit)
+            "sedimentos" -> orchestrator.obtenerResumenSedimentos(limit)
             "resumen", "general" -> orchestrator.obtenerResumenAmbiental(limit)
             else -> return ResponseEntity.badRequest().body(
+                mapOf("error" to "Tema no reconocido: $tema")
+            )
+        }
+
+        // Extraer primera tabla numérica disponible
+        val tabla = (dataset["indicadores"] as? Map<*, *>)?.values?.firstOrNull()
+        val rows = (tabla as? Map<*, *>)?.get("rows") as? List<Map<String, String>> ?: emptyList()
+
+        val datosCompactados = compactarDataset(rows)
+
+        // ===========================================================
+        // 🧠 PROMPT INTELIGENTE Y ROBUSTO – SIN CAMBIAR BACKEND
+        // ===========================================================
+        val prompt = """
+Eres un motor de analítica ambiental especializado en datos del OEFA.
+
+Vas a analizar datos del tema: "$tema".
+
+Los datos han sido normalizados y contienen:
+- parámetro
+- valor (numérico)
+- unidad
+- fecha normalizada
+
+DATA PROCESADA:
+${jacksonObjectMapper().writeValueAsString(datosCompactados).take(6000)}
+
+Debes devolver EXCLUSIVAMENTE un JSON válido con este formato:
+
+<JSON>
+{
+  "tema": "$tema",
+  "descripcion": "string",
+  "dashboard": {
+    "metricas_clave": {
+      "nombre_parametro": "string",
+      "promedio": number | null,
+      "min": number | null,
+      "max": number | null
+    },
+    "series_temporales": [
+      {
+        "nombre": "string",
+        "unidad": "string",
+        "data": [
+          {"fecha": "YYYY-MM-DD", "valor": number}
+        ]
+      }
+    ],
+    "top_parametros": [
+      {"nombre": "string", "valor": number}
+    ],
+    "comparaciones": [
+      {"parametro": "string", "unidad": "string", "min": number, "max": number, "promedio": number}
+    ]
+  }
+}
+</JSON>
+
+REGLAS:
+- Responde SOLO dentro de <JSON></JSON>.
+- No inventes datos.
+- Usa únicamente los valores numéricos provistos.
+- SI una serie temporal tiene un solo dato, genera puntos sintéticos agregando 1 o 2 fechas posteriores,
+  copiando exactamente el mismo valor. NO cambies el valor real.
+- Genera máximo 3 puntos por serie sintética.
+- Mantén la fecha original como primer punto.
+- Formato de fecha: YYYY-MM-DD.
+""".trimIndent()
+
+        // ------- Llamar IA -------
+        val raw = groqClient.analyze(prompt).block() ?: ""
+
+        return try {
+            val jsonText = extraerJsonSeguro(raw)
+            val parsed = jacksonObjectMapper().readValue<Map<String, Any>>(jsonText)
+            ResponseEntity.ok(parsed)
+        } catch (ex: Exception) {
+            ResponseEntity.ok(
                 mapOf(
-                    "error" to "Tema no reconocido. Usa uno de los siguientes: agua, suelo, aire, biota, resumen"
+                    "error" to "Respuesta IA inválida",
+                    "raw" to raw,
+                    "exception" to ex.message
                 )
             )
-        }
-
-        val prompt = when (tema.lowercase()) {
-            "agua" -> """
-            Analiza los siguientes datos ambientales relacionados con el AGUA:
-            Incluyen calidad del agua, denuncias, políticas y supervisión ambiental.
-            
-            Genera un informe con:
-            - Estado general del agua.
-            - Posibles causas de contaminación.
-            - Áreas críticas o en riesgo.
-            - Recomendaciones técnicas basadas en las políticas actuales.
-            
-            Datos:
-            ${data.toString().take(4000)}
-        """.trimIndent()
-
-            "suelo" -> """
-            A continuación tienes datos ambientales del SUELO del Perú, incluyendo calidad, supervisión y políticas.
-            Genera un resumen técnico con:
-            - Principales hallazgos en calidad del suelo.
-            - Riesgos y patrones de degradación.
-            - Políticas o medidas preventivas aplicables.
-            - Recomendaciones de mitigación ambiental.
-            
-            Datos:
-            ${data.toString().take(4000)}
-        """.trimIndent()
-
-            "aire" -> """
-            Analiza los indicadores de calidad del AIRE proporcionados por el OEFA.
-            Describe:
-            - Estado actual de la calidad del aire.
-            - Fuentes principales de contaminación.
-            - Zonas con mayor riesgo para la salud.
-            - Recomendaciones de monitoreo y control.
-            
-            Datos:
-            ${data.toString().take(4000)}
-        """.trimIndent()
-
-            "biota" -> """
-            Analiza los siguientes datos sobre la BIOTA (flora y fauna):
-            Describe:
-            - Estado de la biodiversidad.
-            - Impactos observados en especies o ecosistemas.
-            - Políticas o acciones recomendadas para restauración ecológica.
-            
-            Datos:
-            ${data.toString().take(4000)}
-        """.trimIndent()
-
-            "ruido" -> """
-            Analiza los siguientes datos ambientales relacionados con RUIDO y VIBRACIONES:
-            Incluyen niveles de ruido, supervisión y políticas ambientales.
-            Genera un informe con:
-            - Estado general del ruido ambiental.
-            - Posibles fuentes de contaminación acústica.
-            - Áreas críticas o en riesgo.
-            - Recomendaciones técnicas basadas en las políticas actuales.
-            
-            Datos:
-            ${data.toString().take(4000)}
-        """.trimIndent()
-
-            "hidrobiologia" -> """
-            Analiza los siguientes datos ambientales relacionados con HIDROBIOLOGÍA:
-            Incluyen indicadores hidrobiológicos, denuncias, políticas y supervisión ambiental.
-            Genera un informe con:
-            - Estado general de los cuerpos de agua.
-            - Posibles causas de alteración hidrobiológica.
-            - Áreas críticas o en riesgo.
-            - Recomendaciones técnicas basadas en las políticas actuales.
-             Datos:
-            ${data.toString().take(4000)}
-        """.trimIndent()
-
-            "sedimentos" -> """
-            Analiza los siguientes datos ambientales relacionados con SEDIMENTOS:
-            Incluyen calidad de sedimentos, supervisión y políticas ambientales.
-            Genera un informe con:
-            - Estado general de los sedimentos.
-            - Posibles causas de contaminación.
-            - Áreas críticas o en riesgo.
-            - Recomendaciones técnicas basadas en las políticas actuales.
-            Datos:
-            ${data.toString().take(4000)}
-        """.trimIndent()
-
-            else -> """
-            Eres un analista ambiental del OEFA.
-            Analiza el siguiente resumen general de fiscalización, supervisión y evaluación ambiental.
-            Genera un informe integral con hallazgos, riesgos, y recomendaciones de gestión ambiental.
-            
-            Datos:
-            ${data.toString().take(4000)}
-        """.trimIndent()
-        }
-
-        val analisis = groqClient.analyze(prompt).block()
-
-        return ResponseEntity.ok(
-            mapOf(
-                "tema" to tema.capitalize(),
-                "modelo" to "Groq Llama3-70B",
-                "timestamp" to Instant.now().toString(),
-                "analisis" to analisis
-            )
-        ) as ResponseEntity<Map<String, Any>>
+        } as ResponseEntity<Map<String, Any>>
     }
 }
