@@ -30,7 +30,8 @@ class EsbOrchestrator(private val service: OefaService) {
             "biota" to service.indicadoresBiota(limit),
             "ruido" to service.indicadoresRuido(limit),
             "hidrobiologia" to service.indicadoresHidrobiologia(limit),
-            "sedimento" to service.indicadoresSedimento(limit)
+            "sedimento" to service.indicadoresSedimento(limit),
+            "floraFauna" to service.indicadoresFloraFauna(limit)
         )
 
         val politicas = mapOf(
@@ -160,6 +161,22 @@ class EsbOrchestrator(private val service: OefaService) {
             "descripcion" to "Datos sobre la calidad de sedimentos, acumulación de contaminantes y monitoreo ambiental.",
             "indicadores" to indicadores,
             "supervision" to supervision,
+            "politicas" to politicas
+        )
+    }
+
+    // ===========================================================
+    // Flora y Fauna
+    // ===========================================================
+    fun obtenerResumenFloraFauna(limit: Int = 10): Map<String, Any?> {
+        val indicadores = service.indicadoresFloraFauna(limit)
+        val fiscalizacion = service.safeFetch("DENUN-SINAD-61293", limit)
+        val politicas = service.safeFetch("PROYE-NORMA-EXTER", limit)
+        return mapOf(
+            "tema" to "Flora y Fauna",
+            "descripcion" to "Información sobre la biodiversidad y conservación de especies en el territorio nacional.",
+            "indicadores" to indicadores,
+            "denunciasRelacionadas" to fiscalizacion,
             "politicas" to politicas
         )
     }

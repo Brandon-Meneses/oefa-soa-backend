@@ -18,7 +18,7 @@ class OefaService(private val client: JunarClient) {
     fun denunciasSinada(limit: Int = 20, offset: Int = 0): DataTable =
         client.fetchDataStream("DENUN-SINAD-61293", limit, offset)
 
-    fun resolucionesConMulta(limit: Int = 20, offset: Int = 0): DataTable =
+    fun resolucionesFinales(limit: Int = 20, offset: Int = 0): DataTable =
         client.fetchDataStream("RESOL-CON-MULTA-FIRME", limit, offset)
 
     fun expedientesResueltos(limit: Int = 20, offset: Int = 0): DataTable =
@@ -33,8 +33,8 @@ class OefaService(private val client: JunarClient) {
     fun resolucionesSubdirectorales(limit: Int = 20, offset: Int = 0): DataTable =
         client.fetchDataStream("RESOL-SUBDI", limit, offset)
 
-    fun resolucionesFinales(limit: Int = 20, offset: Int = 0): DataTable =
-        client.fetchDataStream("RESOL-FINAL-CON-MULT", limit, offset)
+    fun resolucionesConMulta(limit: Int = 20, offset: Int = 0): DataTable =
+        client.fetchDataStream("DENUN-SINAD", limit, offset)
 
 
     // ========================================================
@@ -56,53 +56,74 @@ class OefaService(private val client: JunarClient) {
     // ========================================================
 
     // --- AGUA ---
-    fun indicadoresAgua(limit: Int = 20): Map<String, Any?> = mapOf(
-        "EAT" to safeFetch("EAC-COMPO-AMBIE-AGUA", limit),
-        "EAS" to safeFetch("EAS-COMPO-AMBIE-AGUA", limit),
-        "ISIM" to safeFetch("ISIM-COMPO-AMBIE-AGUA", limit),
-        "IPASH" to safeFetch("IPASH-COMPO-AMBIE-AGUA", limit)
+    fun indicadoresGenerico(codigos: Map<String, String>, limit: Int = 20): Map<String, Any?> {
+        return codigos.mapValues { (_, codigo) ->
+            val raw = safeFetch(codigo, limit)
+            analizarDataset(dataTableToMap(raw))
+        }
+    }
+
+    // --- AGUA ---
+    fun indicadoresAgua(limit: Int = 20): Map<String, Any?> = indicadoresGenerico(
+        mapOf(
+            "EAT" to "EAC-COMPO-AMBIE-AGUA",
+            "EAS" to "EAS-COMPO-AMBIE-AGUA",
+            "ISIM" to "ISIM-COMPO-AMBIE-AGUA",
+            "IPASH" to "IPASH-COMPO-AMBIE-AGUA"
+        ), limit
     )
 
     // --- SUELO ---
-    fun indicadoresSuelo(limit: Int = 20): Map<String, Any?> = mapOf(
-        "EAT" to safeFetch("EAC-COMPO-AMBIE-SUELO", limit),
-        "EAS" to safeFetch("EAS-COMPO-AMBIE-SUELO-18111", limit),
-        "ISIM" to safeFetch("ISIM-COMPO-AMBIE-SUELO", limit),
-        "IPASH" to safeFetch("IPASH-COMPO-AMBIE-SUELO", limit)
+    fun indicadoresSuelo(limit: Int = 20): Map<String, Any?> = indicadoresGenerico(
+        mapOf(
+            "EAT" to "EAC-COMPO-AMBIE-SUELO",
+            "EAS" to "EAS-COMPO-AMBIE-SUELO-18111",
+            "ISIM" to "ISIM-COMPO-AMBIE-SUELO",
+            "IPASH" to "IPASH-COMPO-AMBIE-SUELO"
+        ), limit
     )
 
     // --- AIRE ---
-    fun indicadoresAire(limit: Int = 20): Map<String, Any?> = mapOf(
-        "EAT" to safeFetch("EAC-COMPO-AMBIE-AIRE", limit),
-        "EAS" to safeFetch("EAS-COMPO-AMBIE-AIRE", limit),
-        "ISIM" to safeFetch("ISIM-COMPO-AMBIE-AIRE", limit)
+    fun indicadoresAire(limit: Int = 20): Map<String, Any?> = indicadoresGenerico(
+        mapOf(
+            "EAT" to "EAC-COMPO-AMBIE-AIRE"
+        ), limit
     )
 
     // --- BIOTA ---
-    fun indicadoresBiota(limit: Int = 20): Map<String, Any?> = mapOf(
-        "EAT" to safeFetch("EAC-BIOTA", limit),
-        "EAS" to safeFetch("EAS-FLORA-Y-FAUNA", limit),
-        "ISIM" to safeFetch("ISIM-HIDRO", limit),
-        "IPASH" to safeFetch("IPASH-COMPO-AMBIE-BIOTA", limit)
+    fun indicadoresBiota(limit: Int = 20): Map<String, Any?> = indicadoresGenerico(
+        mapOf(
+            "EAT" to "EAC-BIOTA",
+            "IPASH" to "IPASH-COMPO-AMBIE-BIOTA"
+        ), limit
     )
 
     // --- RUIDO Y VIBRACIONES ---
-    fun indicadoresRuido(limit: Int = 20): Map<String, Any?> = mapOf(
-        "EAT" to safeFetch("EAC-RUIDO", limit)
+    fun indicadoresRuido(limit: Int = 20): Map<String, Any?> = indicadoresGenerico(
+        mapOf("EAT" to "EAC-RUIDO"), limit
     )
 
     // --- HIDROBIOLOGÍA ---
-    fun indicadoresHidrobiologia(limit: Int = 20): Map<String, Any?> = mapOf(
-        "EAT" to safeFetch("EAC-COMPO-HIDRO", limit),
-        "EAS" to safeFetch("EAS-COMPO-HIDRO", limit),
-        "ISIM" to safeFetch("ISIM-HIDRO", limit)
+    fun indicadoresHidrobiologia(limit: Int = 20): Map<String, Any?> = indicadoresGenerico(
+        mapOf(
+            "EAT" to "EAC-COMPO-HIDRO",
+            "EAS" to "EAS-COMPO-HIDRO",
+            "ISIM" to "ISIM-HIDRO"
+        ), limit
     )
 
     // --- SEDIMENTOS ---
-    fun indicadoresSedimento(limit: Int = 20): Map<String, Any?> = mapOf(
-        "EAT" to safeFetch("EAT-SEDIM", limit),
-        "ISIM" to safeFetch("ISIM-SEDIM", limit),
-        "IPASH" to safeFetch("IPASH-SEDIM", limit)
+    fun indicadoresSedimento(limit: Int = 20): Map<String, Any?> = indicadoresGenerico(
+        mapOf(
+            "EAT" to "EAT-SEDIM",
+            "ISIM" to "ISIM-SEDIM",
+            "IPASH" to "IPASH-SEDIM"
+        ), limit
+    )
+
+    // --- FLORA Y FAUNA ---
+    fun indicadoresFloraFauna(limit: Int = 20): Map<String, Any?> = indicadoresGenerico(
+        mapOf("EAS" to "EAS-FLORA-Y-FAUNA"), limit
     )
 
 
@@ -134,12 +155,49 @@ class OefaService(private val client: JunarClient) {
      * Envuelve una llamada segura al cliente OEFA.
      * Si un GUID no existe o falla la llamada, devuelve DataTable vacío en lugar de lanzar excepción.
      */
-    fun safeFetch(guid: String, limit: Int = 20, offset: Int = 0): DataTable? {
+    fun safeFetch(guid: String, limit: Int = 20, offset: Int = 0): DataTable {
         return try {
             client.fetchDataStream(guid, limit, offset)
         } catch (ex: Exception) {
             println("⚠️ Error al obtener datos del guid $guid: ${ex.message}")
             DataTable(guid, "Error: ${ex.message}", emptyList(), emptyList())
         }
+    }
+
+    fun analizarDataset(data: Map<String, Any?>): Map<String, Any?> {
+        val rows = (data["rows"] as? List<Map<String, String>>) ?: emptyList()
+
+        // Detectar campos numéricos (aunque estén como String)
+        val camposNumericos = mutableSetOf<String>()
+        rows.forEach { row ->
+            row.forEach { (key, value) ->
+                if (value.toDoubleOrNull() != null) camposNumericos.add(key)
+            }
+        }
+
+        val tipo = when {
+            camposNumericos.isEmpty() -> "cualitativo"
+            camposNumericos.size < (rows.firstOrNull()?.keys?.size ?: 1) / 2 -> "mixto"
+            else -> "cuantitativo"
+        }
+
+        val graficable = tipo != "cualitativo"
+
+        return data + mapOf(
+            "tipo" to tipo,
+            "graficable" to graficable,
+            "camposNumericos" to camposNumericos.toList()
+        )
+    }
+
+    private fun dataTableToMap(table: DataTable?): Map<String, Any?> {
+        if (table == null) return emptyMap()
+
+        return mapOf(
+            "title" to table.title,
+            "description" to table.description,
+            "headers" to table.headers,
+            "rows" to table.rows
+        )
     }
 }
