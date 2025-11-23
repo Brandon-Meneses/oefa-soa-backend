@@ -14,13 +14,13 @@ class EsbOrchestrator(private val service: OefaService) {
         val fiscalizacion = mapOf(
             "denuncias" to service.safeFetch("DENUN-SINAD-61293", limit),
             "pedidosFiscalia" to service.safeFetch("PEDID-FISCA-2019-61940", limit),
-            "resoluciones" to service.safeFetch("RESOL-FINAL-CON-MULT", limit)
+            "resoluciones" to service.safeFetch("RESOL-CON-MULTA-FIRME", limit)
         )
 
         val supervision = mapOf(
             "informes" to service.safeFetch("INFOR-DE-LA-COORD-AGRIC", limit),
-            "medidas" to service.safeFetch("MEDID-ADMIN-DE-SUPER", limit),
-            "direccion" to service.safeFetch("INFOR-DIREC-DE-SUPER", limit)
+            "medidas" to service.safeFetch("MEDID-ADMIN-DE-LAS-DIREC", limit),
+            "direccion" to service.safeFetch("INFOR-DE-LA-DIREC-28304", limit)
         )
 
         val evaluacion = mapOf(
@@ -36,7 +36,7 @@ class EsbOrchestrator(private val service: OefaService) {
 
         val politicas = mapOf(
             "proyectosNormativos" to service.safeFetch("PROYE-NORMA-OEFA", limit),
-            "actividadesAFA" to service.safeFetch("ACTIV-AFA", limit)
+            "actividadesAFA" to service.safeFetch("ACTIV-AFA-36113", limit)
         )
 
         return mapOf(
@@ -88,7 +88,7 @@ class EsbOrchestrator(private val service: OefaService) {
     // ===========================================================
     fun obtenerResumenAire(limit: Int = 10): Map<String, Any?> {
         val calidad = service.indicadoresAire(limit)
-        val supervision = service.safeFetch("INFOR-DIREC-DE-SUPER", limit)
+        val supervision = service.safeFetch("INFOR-DE-LA-DIREC-28304", limit)
         val politicas = service.safeFetch("PROYE-NORMA-OEFA", limit)
 
         return mapOf(
@@ -153,7 +153,7 @@ class EsbOrchestrator(private val service: OefaService) {
     // ===========================================================
     fun obtenerResumenSedimentos(limit: Int = 10): Map<String, Any?> {
         val indicadores = service.indicadoresSedimento(limit)
-        val supervision = service.safeFetch("INFOR-DIREC-DE-SUPER", limit)
+        val supervision = service.safeFetch("INFOR-DE-LA-DIREC-28304", limit)
         val politicas = service.safeFetch("PROYE-NORMA-OEFA", limit)
 
         return mapOf(

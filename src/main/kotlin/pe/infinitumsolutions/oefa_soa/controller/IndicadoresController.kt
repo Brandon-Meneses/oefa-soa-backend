@@ -38,6 +38,6 @@ class IndicadoresController(private val service: OefaService) {
     // --- IPASH ---
     @GetMapping("/ipash/agua") fun ipashAgua(@RequestParam(defaultValue = "20") limit: Int) = service.safeFetch("IPASH-COMPO-AMBIE-AGUA", limit)
     @GetMapping("/ipash/suelo") fun ipashSuelo(@RequestParam(defaultValue = "20") limit: Int) = service.safeFetch("IPASH-COMPO-AMBIE-SUELO", limit)
-    @GetMapping("/ipash/biota") fun ipashBiota(@RequestParam(defaultValue = "20") limit: Int) = service.safeFetch("IPASH-COMPO-AMBIE-BIOTA", limit)
+    //@GetMapping("/ipash/biota") fun ipashBiota(@RequestParam(defaultValue = "20") limit: Int) = service.safeFetch("IPASH-COMPO-AMBIE-BIOTA", limit)
     @GetMapping("/ipash/sedimento") fun ipashSedimento(@RequestParam(defaultValue = "20") limit: Int) = service.safeFetch("IPASH-SEDIM", limit)
 }

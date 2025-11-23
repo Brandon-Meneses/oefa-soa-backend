@@ -93,8 +93,7 @@ class OefaService(private val client: JunarClient) {
     // --- BIOTA ---
     fun indicadoresBiota(limit: Int = 20): Map<String, Any?> = indicadoresGenerico(
         mapOf(
-            "EAT" to "EAC-BIOTA",
-            "IPASH" to "IPASH-COMPO-AMBIE-BIOTA"
+            "EAT" to "EAC-BIOTA"
         ), limit
     )
 

@@ -67,6 +67,6 @@ class EvaluacionDetalladaController(private val service: OefaService) {
         ResponseEntity.ok(service.safeFetch("IPASH-COMPO-AMBIE-SUELO", limit))
     @GetMapping("/ipash/sedimento") fun ipashSedimento(@RequestParam(defaultValue = "20") limit: Int) =
         ResponseEntity.ok(service.safeFetch("IPASH-SEDIM", limit))
-    @GetMapping("/ipash/biota") fun ipashBiota(@RequestParam(defaultValue = "20") limit: Int) =
-        ResponseEntity.ok(service.safeFetch("IPASH-COMPO-AMBIE-BIOTA", limit))
+//    @GetMapping("/ipash/biota") fun ipashBiota(@RequestParam(defaultValue = "20") limit: Int) =
+//        ResponseEntity.ok(service.safeFetch("IPASH-COMPO-AMBIE-BIOTA", limit))
 }
