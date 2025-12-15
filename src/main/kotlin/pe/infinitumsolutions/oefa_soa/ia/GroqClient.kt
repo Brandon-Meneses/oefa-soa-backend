@@ -36,20 +36,45 @@ class GroqClient(
         .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
         .build()
 
+    /**
+     * Método para Análisis de Datos (Dashboard)
+     * Usa un System Prompt específico de analista ambiental.
+     */
     fun analyze(prompt: String): Mono<String> {
+        val systemRole = "You are an environmental analyst specialized in sustainability and ecological management."
+        // Aumentamos el límite de caracteres porque el JSON de entrada puede ser grande
+        return sendRequest(systemRole, prompt.take(4000))
+    }
+
+    /**
+     * Método para Chat / Consultas (RAG Ligero)
+     * Usa un System Prompt de asistente útil.
+     */
+    fun chat(prompt: String): Mono<String> {
+        // En el chat, el Controller ya envía las instrucciones ("Eres un experto...")
+        // dentro del prompt del usuario, así que el system role aquí es genérico de soporte.
+        val systemRole = "You are a helpful and concise assistant."
+        return sendRequest(systemRole, prompt)
+    }
+
+    /**
+     * 🔧 Método privado genérico para evitar duplicar código WebClient
+     */
+    private fun sendRequest(systemContent: String, userContent: String): Mono<String> {
         val messages = listOf(
-            ChatMessage("system", "You are an environmental analyst specialized in sustainability and ecological management."),
-            ChatMessage("user", prompt.take(4000))
+            ChatMessage("system", systemContent),
+            ChatMessage("user", userContent)
         )
 
         val body = ChatRequest(
             model = model,
             messages = messages,
-            temperature = 0.3,
+            temperature = 0.3, // Temperatura baja para respuestas factuales
             stream = false
         )
 
-        println("🛰️ Sending to Groq:\n${body}")
+        // Log para depuración (Opcional: usar Logger en prod)
+        // println("🛰️ Sending to Groq ($model)...")
 
         return webClient.post()
             .uri("/chat/completions")

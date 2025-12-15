@@ -55,7 +55,7 @@ class OefaService(private val client: JunarClient) {
     // 🔹 EVALUACIÓN AMBIENTAL
     // ========================================================
 
-    // --- AGUA ---
+
     fun indicadoresGenerico(codigos: Map<String, String>, limit: Int = 20): Map<String, Any?> {
         return codigos.mapValues { (_, codigo) ->
             val raw = safeFetch(codigo, limit)
